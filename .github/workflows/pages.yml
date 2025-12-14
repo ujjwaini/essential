@@ -25,5 +25,9 @@ jobs:
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v3
         with:
+          # If you encounter permission errors, create a personal access token (repo scope)
+          # and add it as repository secret named `GH_PAGES_TOKEN`. The action will use
+          # `personal_token` when available; otherwise it falls back to `github_token`.
+          personal_token: ${{ secrets.GH_PAGES_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
