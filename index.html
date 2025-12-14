@@ -315,17 +315,139 @@
 
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Progress bar calculation
         function updateProgress() {
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
             const checked = document.querySelectorAll('input[type="checkbox"]:checked');
-            
-            const progress = (checked.length / checkboxes.length) * 100;
+            const progress = (checkboxes.length ? (checked.length / checkboxes.length) * 100 : 0);
             document.getElementById('progressBar').style.width = progress + '%';
         }
 
-        // Initialize progress on load
-        window.addEventListener('DOMContentLoaded', updateProgress);
+        // --- Supabase integration ---
+        // 1. CONFIGURATION (Get these from your Supabase Dashboard -> Settings -> API)
+        // You can replace the placeholders below or you'll be prompted once and the values
+        // will be saved to localStorage for convenience.
+        let SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+        let SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+
+        try {
+            const savedUrl = localStorage.getItem('SUPABASE_URL');
+            const savedKey = localStorage.getItem('SUPABASE_KEY');
+            if (savedUrl) SUPABASE_URL = savedUrl;
+            if (savedKey) SUPABASE_KEY = savedKey;
+        } catch (e) { /* ignore storage errors */ }
+
+        if (!SUPABASE_URL || SUPABASE_URL.includes('YOUR_SUPABASE')) {
+            const url = window.prompt('Enter your Supabase URL (e.g. https://xyz.supabase.co)');
+            if (url) {
+                SUPABASE_URL = url.trim();
+                try { localStorage.setItem('SUPABASE_URL', SUPABASE_URL); } catch (_) {}
+            }
+        }
+        if (!SUPABASE_KEY || SUPABASE_KEY.includes('YOUR_SUPABASE')) {
+            const key = window.prompt('Enter your Supabase anon/public key');
+            if (key) {
+                SUPABASE_KEY = key.trim();
+                try { localStorage.setItem('SUPABASE_KEY', SUPABASE_KEY); } catch (_) {}
+            }
+        }
+
+        let _supabase = null;
+        try {
+            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.warn('Supabase client initialization failed:', e);
+        }
+
+        // Load checklist rows and initialize missing ones
+        async function loadChecklist() {
+            if (!_supabase) { updateProgress(); return; }
+            document.body.classList.add('loading');
+            try {
+                const { data, error } = await _supabase.from('checklist').select('*');
+                if (error) {
+                    console.error('Error loading checklist:', error);
+                    return;
+                }
+
+                const rowsById = new Map((data || []).map(r => [r.id, r]));
+                const toInsert = [];
+
+                document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+                    const id = box.id || box.getAttribute('data-id') || box.getAttribute('data-label');
+                    const label = box.getAttribute('data-label') || box.id || 'item';
+                    const row = rowsById.get(id);
+                    if (row) {
+                        box.checked = !!row.checked;
+                    } else {
+                        toInsert.push({ id: id, checked: false, title: label });
+                    }
+                });
+
+                if (toInsert.length) {
+                    const { error: insertErr } = await _supabase.from('checklist').insert(toInsert);
+                    if (insertErr) console.error('Error inserting initial checklist rows:', insertErr);
+                }
+
+                updateProgress();
+            } finally {
+                document.body.classList.remove('loading');
+            }
+        }
+
+        // Save a single item (upsert)
+        async function saveItem(id, checked, title) {
+            if (!_supabase) return;
+            try {
+                const { error } = await _supabase.from('checklist').upsert({ id, checked, title }).select();
+                if (error) console.error('Error saving item:', error);
+            } catch (e) {
+                console.error('Upsert failed:', e);
+            }
+        }
+
+        // Handle checkbox toggle
+        function onToggle(event) {
+            const checkbox = event.target;
+            const id = checkbox.id || checkbox.getAttribute('data-id') || checkbox.getAttribute('data-label');
+            const title = checkbox.getAttribute('data-label') || id;
+            updateProgress(); // optimistic
+            saveItem(id, checkbox.checked, title);
+        }
+
+        // Realtime subscription
+        function subscribeRealtime() {
+            if (!_supabase) return;
+            try {
+                _supabase.channel('realtime-checklist')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'checklist' }, payload => {
+                        const row = payload.new;
+                        if (!row) return;
+                        const checkbox = document.getElementById(row.id);
+                        if (checkbox) {
+                            checkbox.checked = row.checked;
+                            updateProgress();
+                        }
+                    })
+                    .subscribe();
+            } catch (e) {
+                console.warn('Realtime subscription setup failed:', e);
+            }
+        }
+
+        // Attach listeners and initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Attach change listeners
+            document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+                box.addEventListener('change', onToggle);
+            });
+
+            // Load from Supabase and watch for changes
+            loadChecklist();
+            subscribeRealtime();
+        });
     </script>
 
 </body>
