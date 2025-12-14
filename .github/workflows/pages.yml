@@ -1,11 +1,15 @@
-name: Build and Deploy (gh-pages)
+name: Build and publish to /docs
 
 on:
   push:
     branches: [ main ]
+    # prevent triggering on documentation commits we create
+    paths-ignore:
+      - 'docs/**'
+      - '.github/**'
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,12 +26,22 @@ jobs:
       - name: Build
         run: npm run build --if-present
 
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          # If you encounter permission errors, create a personal access token (repo scope)
-          # and add it as repository secret named `GH_PAGES_TOKEN`. The action will use
-          # `personal_token` when available; otherwise it falls back to `github_token`.
-          personal_token: ${{ secrets.GH_PAGES_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+      - name: Copy build to docs/
+        run: |
+          rm -rf docs || true
+          mkdir -p docs
+          cp -r dist/* docs/
+
+      - name: Commit and push docs/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs || true
+          if git diff --quiet --cached; then
+            echo "No changes to docs/ — skipping commit"
+            exit 0
+          fi
+          git commit -m "chore: publish site to docs/ [skip ci]" || true
+          git push origin HEAD:main
