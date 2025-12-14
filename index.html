@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Essentials Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- RESET & BASE STYLES --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root{
+            --sky-100: #dff6ff;
+            --sky-200: #bfe9ff;
+            --sky-300: #8fd3ff;
+            --accent-1: #60a5fa; /* blue */
+            --accent-2: #7dd3fc; /* cyan */
+            --card-bg: rgba(255,255,255,0.9);
+            --card-border: rgba(15,76,129,0.08);
+            --muted: #4b5563;
+            --text-dark: #0b2447;
+        }
+
+        body{
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #e6f7ff 0%, #cdefff 40%, #9fd7ff 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 48px 20px;
+            color: var(--text-dark);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Soft cloud shapes using pseudo-elements */
+        body::before,
+        body::after{
+            content: '';
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1400px;
+            height: 260px;
+            background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.95) 0 60px, transparent 120px),
+                        radial-gradient(circle at 80% 40%, rgba(255,255,255,0.95) 0 70px, transparent 140px),
+                        radial-gradient(circle at 50% 70%, rgba(255,255,255,0.95) 0 90px, transparent 180px);
+            filter: blur(6px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before{ bottom: -40px; opacity: 0.9; }
+        body::after{ top: -120px; opacity: 0.55; transform: translateX(-50%) scale(1.2); }
+
+        .app-container{
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+            z-index: 2;
+        }
+
+        header{ text-align: center; margin-bottom: 0.5rem; }
+
+        .logo{ font-size: 3rem; margin-bottom: 0.25rem; display:inline-block; }
+
+        h1{
+            font-weight: 700; font-size: 2.25rem; margin-bottom: 6px;
+            background: linear-gradient(90deg, #2563eb, #60a5fa, #34d399);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle{ color: var(--muted); font-size: 0.95rem; font-weight:500; }
+
+        .progress-container{ height: 8px; background: rgba(255,255,255,0.6); border-radius: 999px; overflow:hidden; }
+        .progress-bar{ height:100%; width:0%; background: linear-gradient(90deg,var(--accent-2),var(--accent-1)); box-shadow: 0 6px 18px rgba(59,130,246,0.18); transition: width 360ms ease; }
+
+        /* Cards become soft bluish glass with white base */
+        .card{
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 20px 22px;
+            box-shadow: 0 12px 30px rgba(14,65,112,0.08);
+        }
+
+        .card-header{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+        .card-accent-line{ width:4px; height:26px; border-radius:3px; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+        .card-title{ font-size:1.15rem; font-weight:600; color:var(--text-dark); }
+
+        .checklist{ display:flex; flex-direction:column; gap:10px; }
+        .check-item{ display:flex; align-items:center; padding:10px 12px; border-radius:10px; background: rgba(255,255,255,0.98); border: 1px solid rgba(9,30,63,0.04); cursor:pointer; transition: transform 160ms ease, box-shadow 160ms ease; }
+        .check-item:hover{ transform: translateY(-4px); box-shadow: 0 8px 20px rgba(16,24,40,0.06); }
+
+        .check-item input[type="checkbox"]{ display:none; }
+        .custom-checkbox{ width:22px; height:22px; border-radius:50%; border:2px solid #9fbfe8; margin-right:14px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,253,255,0.95)); }
+        .custom-checkbox::after{ content:'✓'; font-size:13px; color: white; transform: scale(0); transition: transform 160ms ease; }
+        .item-text{ color: var(--text-dark); font-size:1rem; }
+
+        .check-item input:checked + .custom-checkbox{ background: linear-gradient(90deg,var(--accent-2),var(--accent-1)); border-color: transparent; box-shadow: 0 6px 16px rgba(59,130,246,0.18); }
+        .check-item input:checked + .custom-checkbox::after{ transform: scale(1); }
+        .check-item input:checked ~ .item-text{ color: var(--muted); text-decoration: line-through; }
+
+        /* Responsive tweaks */
+        @media (max-width:640px){
+            .app-container{ padding: 0 6px; }
+            h1{ font-size: 1.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header>
+            <div class="logo">🏠</div>
+            <h1>Room Essentials</h1>
+            <div class="subtitle">For 3 People • Cooking at Home • Survival-Ready</div>
+        </header>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-accent-line" style="background: #3B82F6; box-shadow: 0 0 10px #3B82F6;"></div>
+                <h2 class="card-title">Room & Daily Living</h2>
+            </div>
+            
+            <div class="checklist">
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Mattress / Bed</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Bedsheets & Pillow Covers</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Blanket / Comforter</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Table & Chairs</span>
+                </label>
+                
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Extension Boards</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Dustbins</span>
+                </label>
+                
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Curtains</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-accent-line" style="background: #F472B6; box-shadow: 0 0 10px #F472B6;"></div>
+                <h2 class="card-title">Kitchen Essentials</h2>
+            </div>
+            
+            <div class="checklist">
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Gas Stove / Induction</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Pressure Cooker</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Kadhai &amp; Frying Pan</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Plates, Bowls &amp; Glasses</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Knife &amp; Chopping Board</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Storage Containers</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Dishwashing Items</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-accent-line" style="background: #FBBF24; box-shadow: 0 0 10px #FBBF24;"></div>
+                <h2 class="card-title">Groceries (Starter)</h2>
+            </div>
+
+            <div class="checklist">
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Rice &amp; Atta</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Dal &amp; Oil</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Salt, Sugar &amp; Spices</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Milk, Eggs &amp; Bread</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Tea / Coffee</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Instant Food (Maggi)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-accent-line" style="background: #10B981; box-shadow: 0 0 10px #10B981;"></div>
+                <h2 class="card-title">Bathroom & Cleaning</h2>
+            </div>
+
+            <div class="checklist">
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Bucket &amp; Mug</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Towels</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Soap, Shampoo &amp; Toothpaste</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Toilet Cleaner &amp; Brush</span>
+                </label>
+
+                <label class="check-item">
+                    <input type="checkbox" onclick="updateProgress()">
+                    <span class="custom-checkbox"></span>
+                    <span class="item-text">Floor Cleaner &amp; Mop</span>
+                </label>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const checked = document.querySelectorAll('input[type="checkbox"]:checked');
+            
+            const progress = (checked.length / checkboxes.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        // Initialize progress on load
+        window.addEventListener('DOMContentLoaded', updateProgress);
+    </script>
+
+</body>
+</html>
